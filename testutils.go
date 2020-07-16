@@ -7,7 +7,7 @@ import (
 	"github.com/jinzhu/gorm"
 )
 
-func SetFixture() *gorm.DB {
+func connTestDB() *gorm.DB {
 	dbname = os.Getenv("MINIMUM_APP_TEST_DATABASE_NAME")
 	d := Database{
 		Service:      dbservice,
@@ -20,7 +20,11 @@ func SetFixture() *gorm.DB {
 		log.Fatalln("データベースの接続に失敗しました。")
 	}
 	db.AutoMigrate(&Article{})
+	return db
+}
 
+func setFixture() *gorm.DB {
+	db := connTestDB()
 	articles := Articles{
 		Article{Title: "test1", Desc: "test description1", Content: "test content1"},
 		Article{Title: "test2", Desc: "test description2", Content: "test content2"},
@@ -33,8 +37,7 @@ func SetFixture() *gorm.DB {
 }
 
 
-
-func CleanUpFixture(db *gorm.DB) {
+func cleanUpFixture(db *gorm.DB) {
 	db.Exec("TRUNCATE TABLE articles;")
 	db.Close()
 }

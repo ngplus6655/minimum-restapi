@@ -7,6 +7,7 @@ import (
 	"reflect"
 	"strings"
 	"testing"
+	// "fmt"
 
 	"github.com/gorilla/mux"
 	"github.com/stretchr/testify/assert"
@@ -30,8 +31,9 @@ func TestParseJsonArticle(t *testing.T) {
 	assert.Equal(t, str, resBody, "Jsonが正しくパースされませんでした。")
 }
 
-func TestReturnAllArticles(t *testing.T){
-	db := SetFixture()
+func TestReturnAllArticles(t *testing.T) {
+	db := setFixture()
+	defer cleanUpFixture(db)
 	req := httptest.NewRequest("GET", "/all", nil)
 	w := httptest.NewRecorder()
 	returnAllArticles(w, req)
@@ -44,12 +46,11 @@ func TestReturnAllArticles(t *testing.T){
 	assert.Equal(t, "test1", articles[0].Title, "returnAllArticlesが正しい値を返しませんでした。")
 	assert.Equal(t, "test description2", articles[1].Desc, "returnAllArticlesが正しい値を返しませんでした。")
 	assert.Equal(t, "test content3", articles[2].Content, "returnAllArticlesが正しい値を返しませんでした。")
-
-	defer CleanUpFixture(db)
 }
 
 func TestReturnSingleArticle(t *testing.T) {
-	db := SetFixture()
+	db := setFixture()
+	defer cleanUpFixture(db)
 	router := mux.NewRouter()
 	router.HandleFunc("/article/{id}", returnSingleArticle)
 
@@ -67,7 +68,39 @@ func TestReturnSingleArticle(t *testing.T) {
 	assert.Equal(t, "test1", article.Title, "returnAllArticlesが正しい値を返しませんでした。")
 	assert.Equal(t, "test description1", article.Desc, "returnAllArticlesが正しい値を返しませんでした。")
 	assert.Equal(t, "test content1", article.Content, "returnAllArticlesが正しい値を返しませんでした。")
-
-	defer CleanUpFixture(db)
 }
 
+func TestCreateNewArticle(t *testing.T) {
+	db := connTestDB()
+	defer cleanUpFixture(db)
+	reqBody := strings.NewReader(`{"Title":"PostTest","desc":"testing POST methods","content":"Hello world!!"}`)
+	req := httptest.NewRequest("POST", "/article", reqBody)
+	w := httptest.NewRecorder()
+	createNewArticle(w, req)
+
+	resp := w.Result()
+	assert.Equal(t, resp.StatusCode, 200, "StatusCodeの値が正しくありません。")
+
+	var article Article
+	db.First(&article)
+	assert.Equal(t, "PostTest", article.Title, "Articleのタイトルの値が不正です")
+}
+
+func TestUpdateArticle(t *testing.T) {
+	db := setFixture()
+	defer cleanUpFixture(db)
+	router := mux.NewRouter()
+	router.HandleFunc("/article/{id}", updateArticle)
+
+	reqBody := strings.NewReader(`{"Title":"PutTest","desc":"testing PUT methods","content":"UPDATED!!"}`)
+	req := httptest.NewRequest("PUT", "/article/1", reqBody)
+	w := httptest.NewRecorder()
+
+	router.ServeHTTP(w, req)
+	resp := w.Result()
+	assert.Equal(t, resp.StatusCode, 200, "StatusCodeの値が正しくありません。")
+
+	var article Article
+	db.Where("id = ?", 1).First(&article)
+	assert.Equal(t, "UPDATED!!", article.Content, "ArticleのContentの値が不正です")
+}

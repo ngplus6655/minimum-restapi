@@ -65,15 +65,8 @@ func createNewArticle(w http.ResponseWriter, r *http.Request) {
 	article := ParseJsonArticle(w, r)
 	db.Create(&article)
 	if db.NewRecord(article) {
-		log.Fatalln("新規articleの保存に失敗しました。")
+		log.Println("新規articleの保存に失敗しました。")
 	}
-}
-
-func deleteArticle(w http.ResponseWriter, r *http.Request) {
-	fmt.Println("called deleteAtricle")
-	uid := idParamToUint(r)
-	db := DBConn()
-	db.Delete(Article{}, "id = ?", uid)
 }
 
 func updateArticle(w http.ResponseWriter, r *http.Request){
@@ -90,6 +83,13 @@ func updateArticle(w http.ResponseWriter, r *http.Request){
 	article.Desc = updatedArticle.Desc
 	article.Content = updatedArticle.Content
 	db.Save(&article)
+}
+
+func deleteArticle(w http.ResponseWriter, r *http.Request) {
+	fmt.Println("called deleteAtricle")
+	uid := idParamToUint(r)
+	db := DBConn()
+	db.Delete(Article{}, "id = ?", uid)
 }
 
 
