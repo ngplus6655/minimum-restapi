@@ -1,17 +1,15 @@
 package main
 
 import (
+	"encoding/json"
+	"io/ioutil"
 	"net/http/httptest"
 	"reflect"
-	"testing"
-	"io/ioutil"
 	"strings"
-	"log"
-	"os"
-	"encoding/json"
+	"testing"
 
+	"github.com/gorilla/mux"
 	"github.com/stretchr/testify/assert"
-	"github.com/jinzhu/gorm"
 )
 
 func TestIdParamToUint(t *testing.T) {
@@ -32,37 +30,6 @@ func TestParseJsonArticle(t *testing.T) {
 	assert.Equal(t, str, resBody, "Jsonが正しくパースされませんでした。")
 }
 
-func SetFixture() *gorm.DB {
-	dbname = os.Getenv("MINIMUM_APP_TEST_DATABASE_NAME")
-	d := Database{
-		Service: dbservice,
-		User: dbuser,
-		Pass: dbpass,
-		DatabaseName: dbname,
-	}
-
-	db, err := d.connect()
-	if err != nil {
-		log.Fatalln("データベースの接続に失敗しました。")
-	}
-	db.AutoMigrate(&Article{})
-
-	articles := Articles{
-		Article{Title:"test1",Desc:"test description1",Content: "test content1",},
-		Article{Title:"test2",Desc:"test description2",Content: "test content2",},
-		Article{Title:"test1",Desc:"test description3",Content: "test content3",},
-	}
-	for _, article := range articles {
-		db.Create(&article)
-	}
-	return db
-}
-
-func CleanUpFixture(db *gorm.DB) {
-	db.Exec("TRUNCATE TABLE articles;")
-	db.Close()
-}
-
 func TestReturnAllArticles(t *testing.T){
 	db := SetFixture()
 	req := httptest.NewRequest("GET", "/all", nil)
@@ -77,6 +44,30 @@ func TestReturnAllArticles(t *testing.T){
 	assert.Equal(t, "test1", articles[0].Title, "returnAllArticlesが正しい値を返しませんでした。")
 	assert.Equal(t, "test description2", articles[1].Desc, "returnAllArticlesが正しい値を返しませんでした。")
 	assert.Equal(t, "test content3", articles[2].Content, "returnAllArticlesが正しい値を返しませんでした。")
-	
+
 	defer CleanUpFixture(db)
 }
+
+func TestReturnSingleArticle(t *testing.T) {
+	db := SetFixture()
+	router := mux.NewRouter()
+	router.HandleFunc("/article/{id}", returnSingleArticle)
+
+	req := httptest.NewRequest("GET", "/article/1", nil)
+	w := httptest.NewRecorder()
+
+	router.ServeHTTP(w, req)
+	resp := w.Result()
+	resBodyByte, _ := ioutil.ReadAll(resp.Body)
+
+	var article Article
+	json.Unmarshal(resBodyByte, &article)
+
+	assert.Equal(t, resp.StatusCode, 200, "StatusCodeの値が正しくありません。")
+	assert.Equal(t, "test1", article.Title, "returnAllArticlesが正しい値を返しませんでした。")
+	assert.Equal(t, "test description1", article.Desc, "returnAllArticlesが正しい値を返しませんでした。")
+	assert.Equal(t, "test content1", article.Content, "returnAllArticlesが正しい値を返しませんでした。")
+
+	defer CleanUpFixture(db)
+}
+
