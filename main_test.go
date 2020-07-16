@@ -7,7 +7,6 @@ import (
 	"reflect"
 	"strings"
 	"testing"
-	// "fmt"
 
 	"github.com/gorilla/mux"
 	"github.com/stretchr/testify/assert"
@@ -103,4 +102,22 @@ func TestUpdateArticle(t *testing.T) {
 	var article Article
 	db.Where("id = ?", 1).First(&article)
 	assert.Equal(t, "UPDATED!!", article.Content, "ArticleのContentの値が不正です")
+}
+
+func TestDeleteArticle(t *testing.T) {
+	db := setFixture()
+	defer cleanUpFixture(db)
+	router := mux.NewRouter()
+	router.HandleFunc("/article/{id}", deleteArticle)
+
+	req := httptest.NewRequest("DELETE", "/article/1", nil)
+	w := httptest.NewRecorder()
+
+	router.ServeHTTP(w, req)
+	resp := w.Result()
+	assert.Equal(t, resp.StatusCode, 200, "StatusCodeの値が正しくありません。")
+
+	var article Article
+	db.Where("id = ?", 1).First(&article)
+	assert.Equal(t, uint(0), article.ID, "ArticleのIDの値が不正です")
 }
