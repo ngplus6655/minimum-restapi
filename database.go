@@ -26,3 +26,12 @@ func (d Database) init() *gorm.DB {
 	}
 	return db
 }
+
+func (d Database) migrate() *gorm.DB {
+	db, err := d.connect()
+	if err != nil {
+		log.Fatalln("データベースの接続に失敗しました。")
+	}
+	db.AutoMigrate(&Article{})
+	return db
+}
