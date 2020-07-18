@@ -2,24 +2,17 @@ package main
 
 import (
 	"os"
-	"log"
-
 	"github.com/jinzhu/gorm"
 )
 
 func connTestDB() *gorm.DB {
-	dbname = os.Getenv("MINIMUM_APP_TEST_DATABASE_NAME")
-	d := Database{
-		Service:      dbservice,
-		User:         dbuser,
-		Pass:         dbpass,
-		DatabaseName: dbname,
+	testdb := Database{
+		Service: "mysql",
+		User: os.Getenv("MINIMUM_APP_DATABASE_USER"),
+		Pass: os.Getenv("MINIMUM_APP_DATABASE_PASS"),
+		DatabaseName: os.Getenv("MINIMUM_APP_TEST_DATABASE_NAME"),
 	}
-	db, err := d.connect()
-	if err != nil {
-		log.Fatalln("データベースの接続に失敗しました。")
-	}
-	db.AutoMigrate(&Article{})
+	db := testdb.migrate()
 	return db
 }
 
@@ -40,4 +33,15 @@ func setFixture() *gorm.DB {
 func cleanUpFixture(db *gorm.DB) {
 	db.Exec("TRUNCATE TABLE articles;")
 	db.Close()
+}
+
+
+func fetchTestDB() Database {
+	testdb := Database{
+		Service: "mysql",
+		User: os.Getenv("MINIMUM_APP_DATABASE_USER"),
+		Pass: os.Getenv("MINIMUM_APP_DATABASE_PASS"),
+		DatabaseName: os.Getenv("MINIMUM_APP_TEST_DATABASE_NAME"),
+	}
+	return testdb
 }

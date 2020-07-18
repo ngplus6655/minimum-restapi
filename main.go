@@ -1,22 +1,22 @@
 package main
 
 import (
-    "fmt"
-    "log"
-		"net/http"
-		"encoding/json"
-		"io/ioutil"
-		"strconv"
-		"os"
+	"encoding/json"
+	"fmt"
+	"io/ioutil"
+	"log"
+	"net/http"
+	"os"
+	"strconv"
 
-		"github.com/gorilla/mux"
-		"github.com/jinzhu/gorm"
+	"github.com/gorilla/mux"
+	"github.com/jinzhu/gorm"
 )
 
 type Article struct {
 	gorm.Model
-	Title string `json:"Title"`
-	Desc string `json:"desc"`
+	Title   string `json:"title"`
+	Desc    string `json:"desc"`
 	Content string `json:"content"`
 }
 
@@ -29,7 +29,7 @@ func idParamToUint(r *http.Request) uint {
 	return uid
 }
 
-func ParseJsonArticle(w http.ResponseWriter ,r *http.Request) Article {
+func ParseJsonArticle(w http.ResponseWriter, r *http.Request) Article {
 	reqBody, _ := ioutil.ReadAll(r.Body)
 	var article Article
 	json.Unmarshal(reqBody, &article)
@@ -37,23 +37,25 @@ func ParseJsonArticle(w http.ResponseWriter ,r *http.Request) Article {
 	return article
 }
 
-func homePage(w http.ResponseWriter, r *http.Request){
-    fmt.Fprintf(w, "Welcome to the HomePage!")
-    fmt.Println("Endpoint Hit: homePage")
+func homePage(w http.ResponseWriter, r *http.Request) {
+	fmt.Fprintf(w, "Welcome to the HomePage!")
+	fmt.Println("Endpoint Hit: homePage")
 }
 
-func returnAllArticles(w http.ResponseWriter, r *http.Request){
+func returnAllArticles(w http.ResponseWriter, r *http.Request) {
 	fmt.Println("Endpoint Hit: returnAllArticles")
-	db := DBConn()
+	d := GetVar(r, "db").(Database)
+	db := d.init()
 	var articles Articles
 	db.Find(&articles)
 	json.NewEncoder(w).Encode(articles)
-}	
+}
 
-func returnSingleArticle(w http.ResponseWriter, r *http.Request){
+func returnSingleArticle(w http.ResponseWriter, r *http.Request) {
 	fmt.Println("called returnSingleArticle")
 	uid := idParamToUint(r)
-	db := DBConn()
+	d := GetVar(r, "db").(Database)
+	db := d.init()
 	var article Article
 	db.Where("id = ?", uid).First(&article)
 	json.NewEncoder(w).Encode(article)
@@ -61,7 +63,8 @@ func returnSingleArticle(w http.ResponseWriter, r *http.Request){
 
 func createNewArticle(w http.ResponseWriter, r *http.Request) {
 	fmt.Println("called createNewArticle")
-	db := DBConn()
+	d := GetVar(r, "db").(Database)
+	db := d.init()
 	article := ParseJsonArticle(w, r)
 	db.Create(&article)
 	if db.NewRecord(article) {
@@ -69,10 +72,11 @@ func createNewArticle(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func updateArticle(w http.ResponseWriter, r *http.Request){
+func updateArticle(w http.ResponseWriter, r *http.Request) {
 	fmt.Println("called updateAtricle")
 	uid := idParamToUint(r)
-	db := DBConn()
+	d := GetVar(r, "db").(Database)
+	db := d.init()
 
 	updatedArticle := ParseJsonArticle(w, r)
 
@@ -88,56 +92,46 @@ func updateArticle(w http.ResponseWriter, r *http.Request){
 func deleteArticle(w http.ResponseWriter, r *http.Request) {
 	fmt.Println("called deleteAtricle")
 	uid := idParamToUint(r)
-	db := DBConn()
+	d := GetVar(r, "db").(Database)
+	db := d.init()
 	db.Delete(Article{}, "id = ?", uid)
 }
 
+func setDevDB() Database {
+	var (
+		dbservice = "mysql"
+		dbuser    = os.Getenv("MINIMUM_APP_DATABASE_USER")
+		dbpass    = os.Getenv("MINIMUM_APP_DATABASE_PASS")
+		dbname    = os.Getenv("MINIMUM_APP_DEV_DATABASE_NAME")
+	)
 
-func handleRequests() {
-	myRouter := mux.NewRouter().StrictSlash(true)
-	myRouter.HandleFunc("/", homePage)
-	myRouter.HandleFunc("/all", returnAllArticles)
-	myRouter.HandleFunc("/article/{id}", returnSingleArticle).Methods("GET")
-	myRouter.HandleFunc("/article", createNewArticle).Methods("POST")
-	myRouter.HandleFunc("/article/{id}", updateArticle).Methods("PUT")
-	myRouter.HandleFunc("/article/{id}", deleteArticle).Methods("DELETE")
-	log.Fatal(http.ListenAndServe(":10000", myRouter))
-}
-
-var (
-	dbservice = "mysql"
-	dbuser = os.Getenv("MINIMUM_APP_DATABASE_USER")
-	dbpass = os.Getenv("MINIMUM_APP_DATABASE_PASS")
-	dbname = os.Getenv("MINIMUM_APP_DEV_DATABASE_NAME")
-)
-
-func DBConn() *gorm.DB {
 	d := Database{
-		Service: dbservice,
-		User: dbuser,
-		Pass: dbpass,
+		Service:      dbservice,
+		User:         dbuser,
+		Pass:         dbpass,
 		DatabaseName: dbname,
 	}
-	db := d.init()
-	return db
+	return d
+}
+
+func handleRequests() {
+	db := setDevDB()
+	myRouter := mux.NewRouter().StrictSlash(true)
+	myRouter.HandleFunc("/", homePage)
+	myRouter.HandleFunc("/all", withVars(withDB(db, returnAllArticles)))
+	myRouter.HandleFunc("/article/{id}", withVars(withDB(db, returnSingleArticle))).Methods("GET")
+	myRouter.HandleFunc("/article", withVars(withDB(db, createNewArticle))).Methods("POST")
+	myRouter.HandleFunc("/article/{id}", withVars(withDB(db, updateArticle))).Methods("PUT")
+	myRouter.HandleFunc("/article/{id}", withVars(withDB(db, deleteArticle))).Methods("DELETE")
+	log.Fatal(http.ListenAndServe(":10000", myRouter))
 }
 
 func main() {
 	fmt.Println("Rest API v2.0 - Mux Routers")
 
-	d := Database{
-		Service: dbservice,
-		User: dbuser,
-		Pass: dbpass,
-		DatabaseName: dbname,
-	}
-
-	db, err := d.connect()
-	if err != nil {
-		log.Fatalln("データベースの接続に失敗しました。")
-	}
+	d := setDevDB()
+	db := d.migrate()
 	defer db.Close()
-	db.AutoMigrate(&Article{})
-	
+
 	handleRequests()
 }

@@ -7,6 +7,7 @@ import (
 	"reflect"
 	"strings"
 	"testing"
+	// "fmt"
 
 	"github.com/gorilla/mux"
 	"github.com/stretchr/testify/assert"
@@ -26,17 +27,23 @@ func TestParseJsonArticle(t *testing.T) {
 	resp := w.Result()
 	resBodyByte, _ := ioutil.ReadAll(resp.Body)
 	resBody := strings.ReplaceAll(string(resBodyByte), "\n", "")
-	str := `{"ID":0,"CreatedAt":"0001-01-01T00:00:00Z","UpdatedAt":"0001-01-01T00:00:00Z","DeletedAt":null,"Title":"Test","desc":"test description","content":"test content"}`
+	str := `{"ID":0,"CreatedAt":"0001-01-01T00:00:00Z","UpdatedAt":"0001-01-01T00:00:00Z","DeletedAt":null,"title":"Test","desc":"test description","content":"test content"}`
 	assert.Equal(t, str, resBody, "Jsonが正しくパースされませんでした。")
 }
 
 func TestReturnAllArticles(t *testing.T) {
 	db := setFixture()
 	defer cleanUpFixture(db)
+	d := fetchTestDB()
+	router := mux.NewRouter()
+	router.HandleFunc("/all", withVars(withDB(d, returnAllArticles)))
+
 	req := httptest.NewRequest("GET", "/all", nil)
 	w := httptest.NewRecorder()
-	returnAllArticles(w, req)
+
+	router.ServeHTTP(w, req)
 	resp := w.Result()
+
 	resBodyByte, _ := ioutil.ReadAll(resp.Body)
 	var articles Articles
 	json.Unmarshal(resBodyByte, &articles)
@@ -51,7 +58,8 @@ func TestReturnSingleArticle(t *testing.T) {
 	db := setFixture()
 	defer cleanUpFixture(db)
 	router := mux.NewRouter()
-	router.HandleFunc("/article/{id}", returnSingleArticle)
+	d := fetchTestDB()
+	router.HandleFunc("/article/{id}", withVars(withDB(d, returnSingleArticle)))
 
 	req := httptest.NewRequest("GET", "/article/1", nil)
 	w := httptest.NewRecorder()
@@ -72,11 +80,16 @@ func TestReturnSingleArticle(t *testing.T) {
 func TestCreateNewArticle(t *testing.T) {
 	db := connTestDB()
 	defer cleanUpFixture(db)
+	d := fetchTestDB()
+	router := mux.NewRouter()
+	router.HandleFunc("/article", withVars(withDB(d, createNewArticle)))
+
 	reqBody := strings.NewReader(`{"Title":"PostTest","desc":"testing POST methods","content":"Hello world!!"}`)
+	
 	req := httptest.NewRequest("POST", "/article", reqBody)
 	w := httptest.NewRecorder()
-	createNewArticle(w, req)
 
+	router.ServeHTTP(w, req)
 	resp := w.Result()
 	assert.Equal(t, resp.StatusCode, 200, "StatusCodeの値が正しくありません。")
 
@@ -88,8 +101,9 @@ func TestCreateNewArticle(t *testing.T) {
 func TestUpdateArticle(t *testing.T) {
 	db := setFixture()
 	defer cleanUpFixture(db)
+	d := fetchTestDB()
 	router := mux.NewRouter()
-	router.HandleFunc("/article/{id}", updateArticle)
+	router.HandleFunc("/article/{id}", withVars(withDB(d, updateArticle)))
 
 	reqBody := strings.NewReader(`{"Title":"PutTest","desc":"testing PUT methods","content":"UPDATED!!"}`)
 	req := httptest.NewRequest("PUT", "/article/1", reqBody)
@@ -104,11 +118,13 @@ func TestUpdateArticle(t *testing.T) {
 	assert.Equal(t, "UPDATED!!", article.Content, "ArticleのContentの値が不正です")
 }
 
+
 func TestDeleteArticle(t *testing.T) {
 	db := setFixture()
 	defer cleanUpFixture(db)
+	d := fetchTestDB()
 	router := mux.NewRouter()
-	router.HandleFunc("/article/{id}", deleteArticle)
+	router.HandleFunc("/article/{id}", withVars(withDB(d, deleteArticle)))
 
 	req := httptest.NewRequest("DELETE", "/article/1", nil)
 	w := httptest.NewRecorder()
