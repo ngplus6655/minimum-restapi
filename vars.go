@@ -3,7 +3,6 @@ package main
 import (
 	"sync"
 	"net/http"
-	"fmt"
 )
 
 var (
@@ -40,7 +39,6 @@ func SetVar(r *http.Request, key string, value interface{}) {
 }
 
 func withDB(d Database, fn http.HandlerFunc) http.HandlerFunc {
-	fmt.Println("calling withVars")
 	return func(w http.ResponseWriter, r *http.Request) {
 		thisDb := d
 		SetVar(r, "db", thisDb)
@@ -50,7 +48,6 @@ func withDB(d Database, fn http.HandlerFunc) http.HandlerFunc {
 
 func withVars(fn http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		fmt.Println("calling withVars")
 		OpenVars(r)
 		defer CloseVars(r)
 		fn(w, r)

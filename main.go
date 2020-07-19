@@ -43,7 +43,7 @@ func homePage(w http.ResponseWriter, r *http.Request) {
 }
 
 func returnAllArticles(w http.ResponseWriter, r *http.Request) {
-	fmt.Println("Endpoint Hit: returnAllArticles")
+	log.Println("called returnSingleArticle")
 	d := GetVar(r, "db").(Database)
 	db := d.init()
 	var articles Articles
@@ -52,7 +52,7 @@ func returnAllArticles(w http.ResponseWriter, r *http.Request) {
 }
 
 func returnSingleArticle(w http.ResponseWriter, r *http.Request) {
-	fmt.Println("called returnSingleArticle")
+	log.Println("called returnSingleArticle")
 	uid := idParamToUint(r)
 	d := GetVar(r, "db").(Database)
 	db := d.init()
@@ -62,7 +62,7 @@ func returnSingleArticle(w http.ResponseWriter, r *http.Request) {
 }
 
 func createNewArticle(w http.ResponseWriter, r *http.Request) {
-	fmt.Println("called createNewArticle")
+	log.Println("called createNewArticle")
 	d := GetVar(r, "db").(Database)
 	db := d.init()
 	article := ParseJsonArticle(w, r)
@@ -73,7 +73,7 @@ func createNewArticle(w http.ResponseWriter, r *http.Request) {
 }
 
 func updateArticle(w http.ResponseWriter, r *http.Request) {
-	fmt.Println("called updateAtricle")
+	log.Println("called updateAtricle")
 	uid := idParamToUint(r)
 	d := GetVar(r, "db").(Database)
 	db := d.init()
@@ -90,7 +90,7 @@ func updateArticle(w http.ResponseWriter, r *http.Request) {
 }
 
 func deleteArticle(w http.ResponseWriter, r *http.Request) {
-	fmt.Println("called deleteAtricle")
+	log.Println("called deleteAtricle")
 	uid := idParamToUint(r)
 	d := GetVar(r, "db").(Database)
 	db := d.init()
@@ -127,7 +127,7 @@ func handleRequests() {
 }
 
 func main() {
-	fmt.Println("Rest API v2.0 - Mux Routers")
+	log.Println("Rest API v2.0 - Mux Routers")
 
 	d := setDevDB()
 	db := d.migrate()
