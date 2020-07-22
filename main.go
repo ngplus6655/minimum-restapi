@@ -45,6 +45,7 @@ func homePage(w http.ResponseWriter, r *http.Request) {
 func returnAllArticles(w http.ResponseWriter, r *http.Request) {
 	log.Println("called returnSingleArticle")
 	d := GetVar(r, "db").(Database)
+	fmt.Printf("%+v\n", d)
 	db := d.init()
 	var articles Articles
 	db.Find(&articles)

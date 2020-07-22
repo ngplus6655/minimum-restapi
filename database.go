@@ -14,7 +14,8 @@ type Database struct{
 }
 
 func (d Database) connect() (*gorm.DB, error) {
-	connStr := d.User + ":" + d.Pass + "@/" + d.DatabaseName + "?charset=utf8&parseTime=True&loc=Local"
+	connStr := "root:root@tcp(mysql:3306)/" + d.DatabaseName + "?charset=utf8&parseTime=True&loc=Local"
+	// connStr := d.User + ":" + d.Pass + "@/" + d.DatabaseName + "?charset=utf8&parseTime=True&loc=Local"
 	db, err := gorm.Open(d.Service, connStr)
 	return db, err
 }
