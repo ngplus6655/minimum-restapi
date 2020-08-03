@@ -35,9 +35,9 @@ func TestReturnAllArticles(t *testing.T) {
 	defer cleanUpFixture(db)
 	d := fetchTestDB()
 	router := mux.NewRouter()
-	router.HandleFunc("/all", withVars(withDB(d, returnAllArticles)))
+	router.HandleFunc("/articles", withVars(withDB(d, returnAllArticles)))
 
-	req := httptest.NewRequest("GET", "/all", nil)
+	req := httptest.NewRequest("GET", "/articles", nil)
 	w := httptest.NewRecorder()
 
 	router.ServeHTTP(w, req)
@@ -58,9 +58,9 @@ func TestReturnSingleArticle(t *testing.T) {
 	defer cleanUpFixture(db)
 	router := mux.NewRouter()
 	d := fetchTestDB()
-	router.HandleFunc("/article/{id}", withVars(withDB(d, returnSingleArticle)))
+	router.HandleFunc("/articles/{id}", withVars(withDB(d, returnSingleArticle)))
 
-	req := httptest.NewRequest("GET", "/article/1", nil)
+	req := httptest.NewRequest("GET", "/articles/1", nil)
 	w := httptest.NewRecorder()
 
 	router.ServeHTTP(w, req)
@@ -81,11 +81,11 @@ func TestCreateNewArticle(t *testing.T) {
 	defer cleanUpFixture(db)
 	d := fetchTestDB()
 	router := mux.NewRouter()
-	router.HandleFunc("/article", withVars(withDB(d, createNewArticle)))
+	router.HandleFunc("/articles", withVars(withDB(d, createNewArticle)))
 
 	reqBody := strings.NewReader(`{"Title":"PostTest","desc":"testing POST methods","content":"Hello world!!"}`)
 	
-	req := httptest.NewRequest("POST", "/article", reqBody)
+	req := httptest.NewRequest("POST", "/articles", reqBody)
 	w := httptest.NewRecorder()
 
 	router.ServeHTTP(w, req)
@@ -102,10 +102,10 @@ func TestUpdateArticle(t *testing.T) {
 	defer cleanUpFixture(db)
 	d := fetchTestDB()
 	router := mux.NewRouter()
-	router.HandleFunc("/article/{id}", withVars(withDB(d, updateArticle)))
+	router.HandleFunc("/articles/{id}", withVars(withDB(d, updateArticle)))
 
 	reqBody := strings.NewReader(`{"Title":"PutTest","desc":"testing PUT methods","content":"UPDATED!!"}`)
-	req := httptest.NewRequest("PUT", "/article/1", reqBody)
+	req := httptest.NewRequest("PUT", "/articles/1", reqBody)
 	w := httptest.NewRecorder()
 
 	router.ServeHTTP(w, req)
@@ -123,9 +123,9 @@ func TestDeleteArticle(t *testing.T) {
 	defer cleanUpFixture(db)
 	d := fetchTestDB()
 	router := mux.NewRouter()
-	router.HandleFunc("/article/{id}", withVars(withDB(d, deleteArticle)))
+	router.HandleFunc("/articles/{id}", withVars(withDB(d, deleteArticle)))
 
-	req := httptest.NewRequest("DELETE", "/article/1", nil)
+	req := httptest.NewRequest("DELETE", "/articles/1", nil)
 	w := httptest.NewRecorder()
 
 	router.ServeHTTP(w, req)

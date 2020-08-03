@@ -43,9 +43,8 @@ func homePage(w http.ResponseWriter, r *http.Request) {
 }
 
 func returnAllArticles(w http.ResponseWriter, r *http.Request) {
-	log.Println("called returnSingleArticle")
+	log.Println("called returnAllArticle")
 	d := GetVar(r, "db").(Database)
-	fmt.Printf("%+v\n", d)
 	db := d.init()
 	var articles Articles
 	db.Find(&articles)
@@ -127,11 +126,11 @@ func handleRequests() {
 	db := setDevDB()
 	myRouter := mux.NewRouter().StrictSlash(true)
 	myRouter.HandleFunc("/", homePage)
-	myRouter.HandleFunc("/all", withVars(withDB(db, withCORS(returnAllArticles))))
-	myRouter.HandleFunc("/article/{id}", withVars(withDB(db, withCORS(returnSingleArticle)))).Methods("GET")
-	myRouter.HandleFunc("/article", withVars(withDB(db, withCORS(createNewArticle)))).Methods("POST")
-	myRouter.HandleFunc("/article/{id}", withVars(withDB(db, withCORS(updateArticle)))).Methods("PUT")
-	myRouter.HandleFunc("/article/{id}", withVars(withDB(db, withCORS(deleteArticle)))).Methods("DELETE")
+	myRouter.HandleFunc("/articles", withVars(withDB(db, withCORS(returnAllArticles))))
+	myRouter.HandleFunc("/articles/{id}", withVars(withDB(db, withCORS(returnSingleArticle)))).Methods("GET")
+	myRouter.HandleFunc("/articles", withVars(withDB(db, withCORS(createNewArticle)))).Methods("POST")
+	myRouter.HandleFunc("/articles/{id}", withVars(withDB(db, withCORS(updateArticle)))).Methods("PUT")
+	myRouter.HandleFunc("/articles/{id}", withVars(withDB(db, withCORS(deleteArticle)))).Methods("DELETE")
 	log.Fatal(http.ListenAndServe(":10000", myRouter))
 }
 
