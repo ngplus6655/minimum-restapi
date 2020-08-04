@@ -20,6 +20,20 @@ type Article struct {
 	Content string `json:"content"`
 }
 
+func (a Article) validate() (valid bool) {
+	valid = true
+	if len(a.Title) <= 0 || len(a.Title) > 30 {
+		valid = false
+	}
+	if len(a.Desc) <= 0 || len(a.Desc) > 100 {
+		valid = false
+	}
+	if len(a.Content) <= 0 || len(a.Content) > 100 {
+		valid = false
+	}
+	return valid
+}
+
 type Articles []Article
 
 func idParamToUint(r *http.Request) uint {
@@ -66,9 +80,11 @@ func createNewArticle(w http.ResponseWriter, r *http.Request) {
 	d := GetVar(r, "db").(Database)
 	db := d.init()
 	article := ParseJsonArticle(w, r)
-	db.Create(&article)
-	if db.NewRecord(article) {
-		log.Println("新規articleの保存に失敗しました。")
+	if valid := article.validate(); valid {
+		db.Create(&article)
+		if db.NewRecord(article) {
+			log.Println("新規articleの保存に失敗しました。")
+		}
 	}
 }
 
@@ -117,6 +133,7 @@ func setDevDB() Database {
 func withCORS(fn http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
+		w.Header().Set("Access-Control-Allow-Headers","Content-Type")
 		w.Header().Set("Access-Control-Allow-Origin", "*")
 		fn(w, r)
 	}
@@ -126,9 +143,9 @@ func handleRequests() {
 	db := setDevDB()
 	myRouter := mux.NewRouter().StrictSlash(true)
 	myRouter.HandleFunc("/", homePage)
-	myRouter.HandleFunc("/articles", withVars(withDB(db, withCORS(returnAllArticles))))
+	myRouter.HandleFunc("/articles", withVars(withDB(db, withCORS(returnAllArticles)))).Methods("GET")
 	myRouter.HandleFunc("/articles/{id}", withVars(withDB(db, withCORS(returnSingleArticle)))).Methods("GET")
-	myRouter.HandleFunc("/articles", withVars(withDB(db, withCORS(createNewArticle)))).Methods("POST")
+	myRouter.HandleFunc("/articles", withVars(withDB(db, withCORS(createNewArticle)))).Methods("OPTIONS")
 	myRouter.HandleFunc("/articles/{id}", withVars(withDB(db, withCORS(updateArticle)))).Methods("PUT")
 	myRouter.HandleFunc("/articles/{id}", withVars(withDB(db, withCORS(deleteArticle)))).Methods("DELETE")
 	log.Fatal(http.ListenAndServe(":10000", myRouter))

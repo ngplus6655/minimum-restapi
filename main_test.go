@@ -12,6 +12,16 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+func TestValidateOfArticle(t *testing.T) {
+	article := Article{Title:"Test", Desc:"test description",Content:"test content"}
+	validArticle := article.validate()
+	assert.Equal(t, validArticle, true, "Articleの検証が正しくありません")
+	article.Title = ""
+	article.Desc = strings.Repeat("a", 101)
+	invalidArticle := article.validate()
+	assert.Equal(t, invalidArticle, false, "Articleの検証が正しくありません")
+}
+
 func TestIdParamToUint(t *testing.T) {
 	request := httptest.NewRequest("GET", "/article/123", nil)
 	id := idParamToUint(request)
