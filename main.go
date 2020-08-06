@@ -48,7 +48,6 @@ func ParseJsonArticle(w http.ResponseWriter, r *http.Request) Article {
 	var article Article
 	json.Unmarshal(reqBody, &article)
 	json.NewEncoder(w).Encode(article)
-	fmt.Printf("%+v", article)
 	return article
 }
 
@@ -111,7 +110,7 @@ func articlesCORSHandlingWithID(w http.ResponseWriter, r *http.Request){
 
 	if r.Method == http.MethodGet {
 		uid := idParamToUint(r)
-		log.Println("called GET /article/" + string(uid))
+		log.Println("called GET /article/" + strconv.FormatUint(uint64(uid), 10))
 		d := GetVar(r, "db").(Database)
 		db := d.init()
 		var article Article
@@ -121,7 +120,7 @@ func articlesCORSHandlingWithID(w http.ResponseWriter, r *http.Request){
 
 	if r.Method == http.MethodPut {
 		uid := idParamToUint(r)
-		log.Println("called PUT article/" + string(uid))
+		log.Println("called PUT article/" + strconv.FormatUint(uint64(uid), 10))
 		d := GetVar(r, "db").(Database)
 		db := d.init()
 
@@ -138,7 +137,7 @@ func articlesCORSHandlingWithID(w http.ResponseWriter, r *http.Request){
 
 	if r.Method == http.MethodDelete {
 		uid := idParamToUint(r)
-		log.Println("called DELETE article/" + string(uid))
+		log.Println("called DELETE article/" + strconv.FormatUint(uint64(uid), 10))
 		d := GetVar(r, "db").(Database)
 		db := d.init()
 		db.Delete(Article{}, "id = ?", uid)
