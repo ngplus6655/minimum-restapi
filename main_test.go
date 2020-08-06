@@ -7,13 +7,14 @@ import (
 	"reflect"
 	"strings"
 	"testing"
+	"net/http"
 
 	"github.com/gorilla/mux"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestValidateOfArticle(t *testing.T) {
-	article := Article{Title:"Test", Desc:"test description",Content:"test content"}
+	article := Article{Title: "Test", Desc: "test description", Content: "test content"}
 	validArticle := article.validate()
 	assert.Equal(t, validArticle, true, "Articleの検証が正しくありません")
 	article.Title = ""
@@ -40,17 +41,17 @@ func TestParseJsonArticle(t *testing.T) {
 	assert.Equal(t, str, resBody, "Jsonが正しくパースされませんでした。")
 }
 
-func TestReturnAllArticles(t *testing.T) {
+func TestGETAllArticles(t *testing.T) {
 	db := setFixture()
 	defer cleanUpFixture(db)
 	d := fetchTestDB()
-	router := mux.NewRouter()
-	router.HandleFunc("/articles", withVars(withDB(d, returnAllArticles)))
+	r := mux.NewRouter()
+	r.HandleFunc("/articles", withVars(withDB(d, articlesCORSHandling))).Methods(http.MethodGet, http.MethodPost, http.MethodOptions)
 
 	req := httptest.NewRequest("GET", "/articles", nil)
 	w := httptest.NewRecorder()
 
-	router.ServeHTTP(w, req)
+	r.ServeHTTP(w, req)
 	resp := w.Result()
 
 	resBodyByte, _ := ioutil.ReadAll(resp.Body)
@@ -63,17 +64,17 @@ func TestReturnAllArticles(t *testing.T) {
 	assert.Equal(t, "test content3", articles[2].Content, "returnAllArticlesが正しい値を返しませんでした。")
 }
 
-func TestReturnSingleArticle(t *testing.T) {
+func TestGETSingleArticle(t *testing.T) {
 	db := setFixture()
 	defer cleanUpFixture(db)
-	router := mux.NewRouter()
+	r := mux.NewRouter()
 	d := fetchTestDB()
-	router.HandleFunc("/articles/{id}", withVars(withDB(d, returnSingleArticle)))
+	r.HandleFunc("/articles/{id}", withVars(withDB(d, articlesCORSHandlingWithID))).Methods(http.MethodGet, http.MethodPut, http.MethodDelete, http.MethodOptions)
 
 	req := httptest.NewRequest("GET", "/articles/1", nil)
 	w := httptest.NewRecorder()
 
-	router.ServeHTTP(w, req)
+	r.ServeHTTP(w, req)
 	resp := w.Result()
 	resBodyByte, _ := ioutil.ReadAll(resp.Body)
 
@@ -86,19 +87,19 @@ func TestReturnSingleArticle(t *testing.T) {
 	assert.Equal(t, "test content1", article.Content, "returnAllArticlesが正しい値を返しませんでした。")
 }
 
-func TestCreateNewArticle(t *testing.T) {
+func TestPOSTNewArticle(t *testing.T) {
 	db := connTestDB()
 	defer cleanUpFixture(db)
 	d := fetchTestDB()
-	router := mux.NewRouter()
-	router.HandleFunc("/articles", withVars(withDB(d, createNewArticle)))
+	r := mux.NewRouter()
+	r.HandleFunc("/articles", withVars(withDB(d, articlesCORSHandling))).Methods(http.MethodGet, http.MethodPost, http.MethodOptions)
 
 	reqBody := strings.NewReader(`{"Title":"PostTest","desc":"testing POST methods","content":"Hello world!!"}`)
-	
+
 	req := httptest.NewRequest("POST", "/articles", reqBody)
 	w := httptest.NewRecorder()
 
-	router.ServeHTTP(w, req)
+	r.ServeHTTP(w, req)
 	resp := w.Result()
 	assert.Equal(t, resp.StatusCode, 200, "StatusCodeの値が正しくありません。")
 
@@ -107,18 +108,18 @@ func TestCreateNewArticle(t *testing.T) {
 	assert.Equal(t, "PostTest", article.Title, "Articleのタイトルの値が不正です")
 }
 
-func TestUpdateArticle(t *testing.T) {
+func TestPUTArticle(t *testing.T) {
 	db := setFixture()
 	defer cleanUpFixture(db)
 	d := fetchTestDB()
-	router := mux.NewRouter()
-	router.HandleFunc("/articles/{id}", withVars(withDB(d, updateArticle)))
+	r := mux.NewRouter()
+	r.HandleFunc("/articles/{id}", withVars(withDB(d, articlesCORSHandlingWithID))).Methods(http.MethodGet, http.MethodPut, http.MethodDelete, http.MethodOptions)
 
 	reqBody := strings.NewReader(`{"Title":"PutTest","desc":"testing PUT methods","content":"UPDATED!!"}`)
 	req := httptest.NewRequest("PUT", "/articles/1", reqBody)
 	w := httptest.NewRecorder()
 
-	router.ServeHTTP(w, req)
+	r.ServeHTTP(w, req)
 	resp := w.Result()
 	assert.Equal(t, resp.StatusCode, 200, "StatusCodeの値が正しくありません。")
 
@@ -127,18 +128,17 @@ func TestUpdateArticle(t *testing.T) {
 	assert.Equal(t, "UPDATED!!", article.Content, "ArticleのContentの値が不正です")
 }
 
-
-func TestDeleteArticle(t *testing.T) {
+func TestDELETEArticle(t *testing.T) {
 	db := setFixture()
 	defer cleanUpFixture(db)
 	d := fetchTestDB()
-	router := mux.NewRouter()
-	router.HandleFunc("/articles/{id}", withVars(withDB(d, deleteArticle)))
+	r := mux.NewRouter()
+	r.HandleFunc("/articles/{id}", withVars(withDB(d, articlesCORSHandlingWithID))).Methods(http.MethodGet, http.MethodPut, http.MethodDelete, http.MethodOptions)
 
 	req := httptest.NewRequest("DELETE", "/articles/1", nil)
 	w := httptest.NewRecorder()
 
-	router.ServeHTTP(w, req)
+	r.ServeHTTP(w, req)
 	resp := w.Result()
 	assert.Equal(t, resp.StatusCode, 200, "StatusCodeの値が正しくありません。")
 

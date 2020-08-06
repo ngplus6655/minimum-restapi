@@ -56,63 +56,6 @@ func homePage(w http.ResponseWriter, r *http.Request) {
 	fmt.Println("Endpoint Hit: homePage")
 }
 
-func returnAllArticles(w http.ResponseWriter, r *http.Request) {
-	log.Println("called returnAllArticle")
-	d := GetVar(r, "db").(Database)
-	db := d.init()
-	var articles Articles
-	db.Find(&articles)
-	json.NewEncoder(w).Encode(articles)
-}
-
-func returnSingleArticle(w http.ResponseWriter, r *http.Request) {
-	log.Println("called returnSingleArticle")
-	uid := idParamToUint(r)
-	d := GetVar(r, "db").(Database)
-	db := d.init()
-	var article Article
-	db.Where("id = ?", uid).First(&article)
-	json.NewEncoder(w).Encode(article)
-}
-
-func createNewArticle(w http.ResponseWriter, r *http.Request) {
-	log.Println("called createNewArticle")
-	d := GetVar(r, "db").(Database)
-	db := d.init()
-	article := ParseJsonArticle(w, r)
-	if valid := article.validate(); valid {
-		db.Create(&article)
-		if db.NewRecord(article) {
-			log.Println("新規articleの保存に失敗しました。")
-		}
-	}
-}
-
-func updateArticle(w http.ResponseWriter, r *http.Request) {
-	log.Println("called updateAtricle")
-	uid := idParamToUint(r)
-	d := GetVar(r, "db").(Database)
-	db := d.init()
-
-	updatedArticle := ParseJsonArticle(w, r)
-
-	var article Article
-	db.Where("id = ?", uid).First(&article)
-
-	article.Title = updatedArticle.Title
-	article.Desc = updatedArticle.Desc
-	article.Content = updatedArticle.Content
-	db.Save(&article)
-}
-
-func deleteArticle(w http.ResponseWriter, r *http.Request) {
-	log.Println("called deleteAtricle")
-	uid := idParamToUint(r)
-	d := GetVar(r, "db").(Database)
-	db := d.init()
-	db.Delete(Article{}, "id = ?", uid)
-}
-
 func setDevDB() Database {
 	var (
 		dbservice = "mysql"
@@ -130,25 +73,85 @@ func setDevDB() Database {
 	return d
 }
 
-func withCORS(fn http.HandlerFunc) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
-		w.Header().Set("Access-Control-Allow-Headers","Content-Type")
-		w.Header().Set("Access-Control-Allow-Origin", "*")
-		fn(w, r)
+
+func articlesCORSHandling(w http.ResponseWriter, r *http.Request){
+	w.Header().Set("Access-Control-Allow-Origin", "http://localhost:3000")
+	w.Header().Set( "Access-Control-Allow-Headers", "Origin, Content-Type,")
+	w.Header().Set( "Access-Control-Allow-Methods","GET, POST, OPTIONS" )
+
+	if r.Method == http.MethodGet {
+		log.Println("called GET /articles")
+		d := GetVar(r, "db").(Database)
+		db := d.init()
+		var articles Articles
+		db.Find(&articles)
+		json.NewEncoder(w).Encode(articles)
 	}
-} 
+
+	if r.Method == http.MethodPost {
+		log.Println("called POST /articles")
+		d := GetVar(r, "db").(Database)
+		db := d.init()
+		article := ParseJsonArticle(w, r)
+		if valid := article.validate(); valid {
+			db.Create(&article)
+			if db.NewRecord(article) {
+				log.Println("新規articleの保存に失敗しました。")
+			}
+		}
+	}
+
+}
+
+func articlesCORSHandlingWithID(w http.ResponseWriter, r *http.Request){
+	w.Header().Set("Access-Control-Allow-Origin", "*")
+	w.Header().Set("Access-Control-Allow-Headers", "Origin, Content-Type")
+	w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS" )
+
+	if r.Method == http.MethodGet {
+		uid := idParamToUint(r)
+		log.Println("called GET /article/" + strconv.FormatUint(uint64(uid), 10))
+		d := GetVar(r, "db").(Database)
+		db := d.init()
+		var article Article
+		db.Where("id = ?", uid).First(&article)
+		json.NewEncoder(w).Encode(article)
+	}
+
+	if r.Method == http.MethodPut {
+		uid := idParamToUint(r)
+		log.Println("called PUT article/" + strconv.FormatUint(uint64(uid), 10))
+		d := GetVar(r, "db").(Database)
+		db := d.init()
+
+		updatedArticle := ParseJsonArticle(w, r)
+
+		var article Article
+		db.Where("id = ?", uid).First(&article)
+
+		article.Title = updatedArticle.Title
+		article.Desc = updatedArticle.Desc
+		article.Content = updatedArticle.Content
+		db.Save(&article)
+	}
+
+	if r.Method == http.MethodDelete {
+		uid := idParamToUint(r)
+		log.Println("called DELETE article/" + strconv.FormatUint(uint64(uid), 10))
+		d := GetVar(r, "db").(Database)
+		db := d.init()
+		db.Delete(Article{}, "id = ?", uid)
+	}
+}
 
 func handleRequests() {
 	db := setDevDB()
-	myRouter := mux.NewRouter().StrictSlash(true)
-	myRouter.HandleFunc("/", homePage)
-	myRouter.HandleFunc("/articles", withVars(withDB(db, withCORS(returnAllArticles)))).Methods("GET")
-	myRouter.HandleFunc("/articles/{id}", withVars(withDB(db, withCORS(returnSingleArticle)))).Methods("GET")
-	myRouter.HandleFunc("/articles", withVars(withDB(db, withCORS(createNewArticle)))).Methods("OPTIONS")
-	myRouter.HandleFunc("/articles/{id}", withVars(withDB(db, withCORS(updateArticle)))).Methods("PUT")
-	myRouter.HandleFunc("/articles/{id}", withVars(withDB(db, withCORS(deleteArticle)))).Methods("DELETE")
-	log.Fatal(http.ListenAndServe(":10000", myRouter))
+	r := mux.NewRouter()
+	r.HandleFunc("/", homePage)
+	r.HandleFunc("/articles", withVars(withDB(db, articlesCORSHandling))).Methods(http.MethodGet, http.MethodPost, http.MethodOptions)
+	r.HandleFunc("/articles/{id}", withVars(withDB(db, articlesCORSHandlingWithID))).Methods(http.MethodGet, http.MethodPut, http.MethodDelete, http.MethodOptions)
+	r.Use(mux.CORSMethodMiddleware(r))
+	log.Fatal(http.ListenAndServe(":10000", r))
 }
 
 func main() {

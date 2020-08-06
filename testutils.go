@@ -1,15 +1,15 @@
 package main
 
 import (
-	"os"
 	"github.com/jinzhu/gorm"
+	"os"
 )
 
 func connTestDB() *gorm.DB {
 	testdb := Database{
-		Service: "mysql",
-		User: os.Getenv("MINIMUM_APP_DATABASE_USER"),
-		Pass: os.Getenv("MINIMUM_APP_DATABASE_PASS"),
+		Service:      "mysql",
+		User:         os.Getenv("MINIMUM_APP_DATABASE_USER"),
+		Pass:         os.Getenv("MINIMUM_APP_DATABASE_PASS"),
 		DatabaseName: os.Getenv("MINIMUM_APP_TEST_DATABASE_NAME"),
 	}
 	db := testdb.migrate()
@@ -29,18 +29,16 @@ func setFixture() *gorm.DB {
 	return db
 }
 
-
 func cleanUpFixture(db *gorm.DB) {
 	db.Exec("TRUNCATE TABLE articles;")
 	db.Close()
 }
 
-
 func fetchTestDB() Database {
 	testdb := Database{
-		Service: "mysql",
-		User: os.Getenv("MINIMUM_APP_DATABASE_USER"),
-		Pass: os.Getenv("MINIMUM_APP_DATABASE_PASS"),
+		Service:      "mysql",
+		User:         os.Getenv("MINIMUM_APP_DATABASE_USER"),
+		Pass:         os.Getenv("MINIMUM_APP_DATABASE_PASS"),
 		DatabaseName: os.Getenv("MINIMUM_APP_TEST_DATABASE_NAME"),
 	}
 	return testdb
