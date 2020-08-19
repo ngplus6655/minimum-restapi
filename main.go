@@ -130,24 +130,15 @@ func setDevDB() Database {
 	return d
 }
 
-func withCORS(fn http.HandlerFunc) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
-		w.Header().Set("Access-Control-Allow-Headers","Content-Type")
-		w.Header().Set("Access-Control-Allow-Origin", "*")
-		fn(w, r)
-	}
-} 
-
 func handleRequests() {
 	db := setDevDB()
 	myRouter := mux.NewRouter().StrictSlash(true)
 	myRouter.HandleFunc("/", homePage)
-	myRouter.HandleFunc("/articles", withVars(withDB(db, withCORS(returnAllArticles)))).Methods("GET")
-	myRouter.HandleFunc("/articles/{id}", withVars(withDB(db, withCORS(returnSingleArticle)))).Methods("GET")
-	myRouter.HandleFunc("/articles", withVars(withDB(db, withCORS(createNewArticle)))).Methods("OPTIONS")
-	myRouter.HandleFunc("/articles/{id}", withVars(withDB(db, withCORS(updateArticle)))).Methods("PUT")
-	myRouter.HandleFunc("/articles/{id}", withVars(withDB(db, withCORS(deleteArticle)))).Methods("DELETE")
+	myRouter.HandleFunc("/articles", withVars(withDB(db, returnAllArticles))).Methods("GET")
+	myRouter.HandleFunc("/articles/{id}", withVars(withDB(db, returnSingleArticle))).Methods("GET")
+	myRouter.HandleFunc("/articles", withVars(withDB(db, createNewArticle))).Methods("POST")
+	myRouter.HandleFunc("/articles/{id}", withVars(withDB(db, updateArticle))).Methods("PUT")
+	myRouter.HandleFunc("/articles/{id}", withVars(withDB(db, deleteArticle))).Methods("DELETE")
 	log.Fatal(http.ListenAndServe(":10000", myRouter))
 }
 
