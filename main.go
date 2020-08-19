@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"os"
 	"strconv"
+	"encoding/base64"
 
 	"github.com/gorilla/mux"
 	"github.com/jinzhu/gorm"
@@ -22,13 +23,13 @@ type Article struct {
 
 func (a Article) validate() (valid bool) {
 	valid = true
-	if len(a.Title) <= 0 || len(a.Title) > 30 {
+	if len(a.Title) == 0 || len(a.Title) > 30 {
 		valid = false
 	}
-	if len(a.Desc) <= 0 || len(a.Desc) > 100 {
+	if len(a.Desc) == 0 || len(a.Desc) > 100 {
 		valid = false
 	}
-	if len(a.Content) <= 0 || len(a.Content) > 100 {
+	if len(a.Content) == 0 || len(a.Content) > 100 {
 		valid = false
 	}
 	return valid
@@ -47,7 +48,6 @@ func ParseJsonArticle(w http.ResponseWriter, r *http.Request) Article {
 	reqBody, _ := ioutil.ReadAll(r.Body)
 	var article Article
 	json.Unmarshal(reqBody, &article)
-	json.NewEncoder(w).Encode(article)
 	return article
 }
 
@@ -73,6 +73,14 @@ func setDevDB() Database {
 	return d
 }
 
+func setFlashMessage(w http.ResponseWriter, str string){
+	value64 := base64.StdEncoding.EncodeToString([]byte(str))
+	cookie := &http.Cookie{
+		Name: "message",
+		Value: value64,
+	}
+	http.SetCookie(w, cookie)
+}
 
 func articlesCORSHandling(w http.ResponseWriter, r *http.Request){
 	w.Header().Set("Access-Control-Allow-Origin", "http://localhost:3000")
@@ -95,12 +103,15 @@ func articlesCORSHandling(w http.ResponseWriter, r *http.Request){
 		article := ParseJsonArticle(w, r)
 		if valid := article.validate(); valid {
 			db.Create(&article)
-			if db.NewRecord(article) {
+			if db.NewRecord(article) == false {
+				log.Println("新規articleを保存しました")
+				setFlashMessage(w, "保存に成功しました")
+			}else {
 				log.Println("新規articleの保存に失敗しました。")
+				setFlashMessage(w, "保存に失敗しました")
 			}
 		}
 	}
-
 }
 
 func articlesCORSHandlingWithID(w http.ResponseWriter, r *http.Request){
