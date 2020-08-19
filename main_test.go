@@ -8,6 +8,7 @@ import (
 	"strings"
 	"testing"
 	"net/http"
+	"encoding/base64"
 
 	"github.com/gorilla/mux"
 	"github.com/stretchr/testify/assert"
@@ -33,12 +34,21 @@ func TestParseJsonArticle(t *testing.T) {
 	reqBody := strings.NewReader(`{"Title": "Test","desc": "test description","content": "test content"}`)
 	req := httptest.NewRequest("GET", "/", reqBody)
 	w := httptest.NewRecorder()
-	ParseJsonArticle(w, req)
-	resp := w.Result()
-	resBodyByte, _ := ioutil.ReadAll(resp.Body)
-	resBody := strings.ReplaceAll(string(resBodyByte), "\n", "")
-	str := `{"ID":0,"CreatedAt":"0001-01-01T00:00:00Z","UpdatedAt":"0001-01-01T00:00:00Z","DeletedAt":null,"title":"Test","desc":"test description","content":"test content"}`
-	assert.Equal(t, str, resBody, "Jsonが正しくパースされませんでした。")
+	getArticle := ParseJsonArticle(w, req)
+	article := Article{
+		Title: "Test",
+		Desc: "test description",
+		Content: "test content",
+	}
+	assert.Equal(t, article, getArticle, "Jsonが正しくパースされませんでした。")
+}
+
+func TestSetFlashMessage(t *testing.T) {
+	w := httptest.NewRecorder()
+	str := "message"
+	setFlashMessage(w, str)
+	cookie := []string([]string{"message=bWVzc2FnZQ=="})
+	assert.Equal(t, cookie, w.HeaderMap["Set-Cookie"], "cookieがうまく設定されませんでした")
 }
 
 func TestGETAllArticles(t *testing.T) {
@@ -101,7 +111,9 @@ func TestPOSTNewArticle(t *testing.T) {
 
 	r.ServeHTTP(w, req)
 	resp := w.Result()
-	assert.Equal(t, resp.StatusCode, 200, "StatusCodeの値が正しくありません。")
+	value64 := base64.StdEncoding.EncodeToString([]byte("保存に成功しました"))
+	cookie := []string([]string{"message=" + value64})
+	assert.Equal(t, resp.Header["Set-Cookie"], cookie, "StatusCodeの値が正しくありません。")
 
 	var article Article
 	db.First(&article)
