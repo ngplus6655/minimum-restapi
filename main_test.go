@@ -33,12 +33,13 @@ func TestParseJsonArticle(t *testing.T) {
 	reqBody := strings.NewReader(`{"Title": "Test","desc": "test description","content": "test content"}`)
 	req := httptest.NewRequest("GET", "/", reqBody)
 	w := httptest.NewRecorder()
-	ParseJsonArticle(w, req)
-	resp := w.Result()
-	resBodyByte, _ := ioutil.ReadAll(resp.Body)
-	resBody := strings.ReplaceAll(string(resBodyByte), "\n", "")
-	str := `{"ID":0,"CreatedAt":"0001-01-01T00:00:00Z","UpdatedAt":"0001-01-01T00:00:00Z","DeletedAt":null,"title":"Test","desc":"test description","content":"test content"}`
-	assert.Equal(t, str, resBody, "Jsonが正しくパースされませんでした。")
+	getArticle := ParseJsonArticle(w, req)
+	article := Article{
+		Title: "Test",
+		Desc: "test description",
+		Content: "test content",
+	}
+	assert.Equal(t, article, getArticle, "Jsonが正しくパースされませんでした。")
 }
 
 func TestGETAllArticles(t *testing.T) {

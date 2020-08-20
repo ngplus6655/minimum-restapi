@@ -47,7 +47,6 @@ func ParseJsonArticle(w http.ResponseWriter, r *http.Request) Article {
 	reqBody, _ := ioutil.ReadAll(r.Body)
 	var article Article
 	json.Unmarshal(reqBody, &article)
-	json.NewEncoder(w).Encode(article)
 	return article
 }
 
@@ -89,18 +88,26 @@ func articlesCORSHandling(w http.ResponseWriter, r *http.Request){
 	}
 
 	if r.Method == http.MethodPost {
+		error := false
 		log.Println("called POST /articles")
 		d := GetVar(r, "db").(Database)
 		db := d.init()
 		article := ParseJsonArticle(w, r)
 		if valid := article.validate(); valid {
 			db.Create(&article)
-			if db.NewRecord(article) {
-				log.Println("新規articleの保存に失敗しました。")
+			if db.NewRecord(article) == false {
+				log.Println("新規articleの保存に成功しました")
+			} else if db.NewRecord(article) == true {
+				error = true
 			}
+		} else {
+			error = true
+		}
+		if error {
+			log.Println("新規articleの保存に失敗しました")
+			w.WriteHeader(http.StatusInternalServerError)
 		}
 	}
-
 }
 
 func articlesCORSHandlingWithID(w http.ResponseWriter, r *http.Request){
