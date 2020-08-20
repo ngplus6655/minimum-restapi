@@ -97,6 +97,7 @@ func articlesCORSHandling(w http.ResponseWriter, r *http.Request){
 	}
 
 	if r.Method == http.MethodPost {
+		error := false
 		log.Println("called POST /articles")
 		d := GetVar(r, "db").(Database)
 		db := d.init()
@@ -104,12 +105,16 @@ func articlesCORSHandling(w http.ResponseWriter, r *http.Request){
 		if valid := article.validate(); valid {
 			db.Create(&article)
 			if db.NewRecord(article) == false {
-				log.Println("新規articleを保存しました")
-				setFlashMessage(w, "保存に成功しました")
-			}else {
-				log.Println("新規articleの保存に失敗しました。")
-				setFlashMessage(w, "保存に失敗しました")
+				log.Println("新規articleの保存に成功しました")
+			} else if db.NewRecord(article) == true {
+				error = true
 			}
+		} else {
+			error = true
+		}
+		if error {
+			log.Println("新規articleの保存に失敗しました")
+			w.WriteHeader(http.StatusInternalServerError)
 		}
 	}
 }
