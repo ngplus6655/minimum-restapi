@@ -8,7 +8,6 @@ import (
 	"strings"
 	"testing"
 	"net/http"
-	"encoding/base64"
 
 	"github.com/gorilla/mux"
 	"github.com/stretchr/testify/assert"
@@ -102,10 +101,6 @@ func TestPOSTNewArticle(t *testing.T) {
 	w := httptest.NewRecorder()
 
 	r.ServeHTTP(w, req)
-	resp := w.Result()
-	value64 := base64.StdEncoding.EncodeToString([]byte("保存に成功しました"))
-	cookie := []string([]string{"message=" + value64})
-	assert.Equal(t, resp.Header["Set-Cookie"], cookie, "StatusCodeの値が正しくありません。")
 
 	var article Article
 	db.First(&article)

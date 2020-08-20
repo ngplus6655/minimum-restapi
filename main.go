@@ -8,7 +8,6 @@ import (
 	"net/http"
 	"os"
 	"strconv"
-	"encoding/base64"
 
 	"github.com/gorilla/mux"
 	"github.com/jinzhu/gorm"
@@ -71,15 +70,6 @@ func setDevDB() Database {
 		DatabaseName: dbname,
 	}
 	return d
-}
-
-func setFlashMessage(w http.ResponseWriter, str string){
-	value64 := base64.StdEncoding.EncodeToString([]byte(str))
-	cookie := &http.Cookie{
-		Name: "message",
-		Value: value64,
-	}
-	http.SetCookie(w, cookie)
 }
 
 func articlesCORSHandling(w http.ResponseWriter, r *http.Request){
