@@ -8,6 +8,7 @@ import (
 	"strings"
 	"testing"
 	"net/http"
+	"encoding/base64"
 
 	"github.com/gorilla/mux"
 	"github.com/stretchr/testify/assert"
@@ -40,6 +41,17 @@ func TestParseJsonArticle(t *testing.T) {
 		Content: "test content",
 	}
 	assert.Equal(t, article, getArticle, "Jsonが正しくパースされませんでした。")
+<<<<<<< HEAD
+=======
+}
+
+func TestSetFlashMessage(t *testing.T) {
+	w := httptest.NewRecorder()
+	str := "message"
+	setFlashMessage(w, str)
+	cookie := []string([]string{"message=bWVzc2FnZQ=="})
+	assert.Equal(t, cookie, w.HeaderMap["Set-Cookie"], "cookieがうまく設定されませんでした")
+>>>>>>> origin/dev
 }
 
 func TestGETAllArticles(t *testing.T) {
@@ -102,7 +114,9 @@ func TestPOSTNewArticle(t *testing.T) {
 
 	r.ServeHTTP(w, req)
 	resp := w.Result()
-	assert.Equal(t, resp.StatusCode, 200, "StatusCodeの値が正しくありません。")
+	value64 := base64.StdEncoding.EncodeToString([]byte("保存に成功しました"))
+	cookie := []string([]string{"message=" + value64})
+	assert.Equal(t, resp.Header["Set-Cookie"], cookie, "StatusCodeの値が正しくありません。")
 
 	var article Article
 	db.First(&article)

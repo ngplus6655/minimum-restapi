@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"os"
 	"strconv"
+	"encoding/base64"
 
 	"github.com/gorilla/mux"
 	"github.com/jinzhu/gorm"
@@ -22,13 +23,13 @@ type Article struct {
 
 func (a Article) validate() (valid bool) {
 	valid = true
-	if len(a.Title) <= 0 || len(a.Title) > 30 {
+	if len(a.Title) == 0 || len(a.Title) > 30 {
 		valid = false
 	}
-	if len(a.Desc) <= 0 || len(a.Desc) > 100 {
+	if len(a.Desc) == 0 || len(a.Desc) > 100 {
 		valid = false
 	}
-	if len(a.Content) <= 0 || len(a.Content) > 100 {
+	if len(a.Content) == 0 || len(a.Content) > 100 {
 		valid = false
 	}
 	return valid
@@ -72,6 +73,14 @@ func setDevDB() Database {
 	return d
 }
 
+func setFlashMessage(w http.ResponseWriter, str string){
+	value64 := base64.StdEncoding.EncodeToString([]byte(str))
+	cookie := &http.Cookie{
+		Name: "message",
+		Value: value64,
+	}
+	http.SetCookie(w, cookie)
+}
 
 func articlesCORSHandling(w http.ResponseWriter, r *http.Request){
 	w.Header().Set("Access-Control-Allow-Origin", "http://localhost:3000")
