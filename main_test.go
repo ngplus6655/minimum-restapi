@@ -41,17 +41,6 @@ func TestParseJsonArticle(t *testing.T) {
 		Content: "test content",
 	}
 	assert.Equal(t, article, getArticle, "Jsonが正しくパースされませんでした。")
-<<<<<<< HEAD
-=======
-}
-
-func TestSetFlashMessage(t *testing.T) {
-	w := httptest.NewRecorder()
-	str := "message"
-	setFlashMessage(w, str)
-	cookie := []string([]string{"message=bWVzc2FnZQ=="})
-	assert.Equal(t, cookie, w.HeaderMap["Set-Cookie"], "cookieがうまく設定されませんでした")
->>>>>>> origin/dev
 }
 
 func TestGETAllArticles(t *testing.T) {
